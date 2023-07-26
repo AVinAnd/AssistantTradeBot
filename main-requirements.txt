@@ -1,3 +1,4 @@
 python-dotenv
+environs
 aiogram
-pydantic
+tinkoff-investments
