@@ -2,11 +2,15 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config.config import load_config
 from handlers import commands
+from services import stock_market
 
 logger = logging.getLogger(__name__)
+loop = asyncio.new_event_loop()
+scheduler = AsyncIOScheduler(event_loop=loop)
 
 
 async def main():
@@ -22,8 +26,15 @@ async def main():
     dp = Dispatcher()
     dp.include_routers(commands.router)
 
+    await stock_market.get_shares(logger)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
+
+async def add_jobs(job_scheduler):
+    job_scheduler.add_job(main)
+    job_scheduler.start()
+
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(add_jobs(scheduler))
+    loop.run_forever()

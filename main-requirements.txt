@@ -2,3 +2,4 @@ python-dotenv
 environs
 aiogram
 tinkoff-investments
+apscheduler
