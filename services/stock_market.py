@@ -12,9 +12,11 @@ tinkoff_client = Client(config('TINKOFF_TOKEN'))
 bot = Bot(token=config('BOT_TOKEN'))
 
 
-async def get_shares():
+async def get_shares(logger):
     with tinkoff_client as client:
         account = client.users.get_accounts().accounts[1]
+        #accounts = await client.users.get_accounts()
+        #account = accounts.accounts[1]
         account_positions = client.operations.get_portfolio(
             account_id=account.id
         ).positions
@@ -29,9 +31,8 @@ async def get_shares():
         current_prices = await get_shares_prices()
         for uid in current_prices.keys():
             shares[uid]['starting_price'] = current_prices[uid]
-        print(shares)
 
-        #logger.info(shares)
+        logger.info(shares)
 
 
 async def get_shares_prices() -> dict:
@@ -66,6 +67,3 @@ async def test_check():
         if price_change != 1:
             text = await generate_price_changing_text(shares[uid]['name'])
             await bot.send_message(chat_id=config('TG_ID'), text=text)
-
-asyncio.run(get_shares())
-asyncio.run(test_check())
