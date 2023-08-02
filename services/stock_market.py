@@ -1,30 +1,27 @@
-import asyncio
-
 from aiogram import Bot
-from tinkoff.invest import AsyncClient, Client
+from tinkoff.invest import AsyncClient
 
 from config.config import load_config
 from lexicon.lexicon import generate_price_changing_text
 
 shares = {}
 config = load_config()
-tinkoff_client = Client(config('TINKOFF_TOKEN'))
 bot = Bot(token=config('BOT_TOKEN'))
 
 
 async def get_shares(logger):
-    with tinkoff_client as client:
-        account = client.users.get_accounts().accounts[1]
-        #accounts = await client.users.get_accounts()
-        #account = accounts.accounts[1]
-        account_positions = client.operations.get_portfolio(
+    async with AsyncClient(config('TINKOFF_TOKEN')) as client:
+        accounts = await client.users.get_accounts()
+        account = accounts.accounts[1]
+        account_positions_list = await client.operations.get_portfolio(
             account_id=account.id
-        ).positions
+        )
+        account_positions = account_positions_list.positions
         uid_list = [account_positions[i].instrument_uid
                     for i in range(len(account_positions))]
 
         for uid in uid_list:
-            active = client.instruments.find_instrument(query=uid)
+            active = await client.instruments.find_instrument(query=uid)
             if active.instruments:
                 shares[uid] = {'name': active.instruments[0].name}
 
@@ -37,10 +34,11 @@ async def get_shares(logger):
 
 async def get_shares_prices() -> dict:
     current_prices = {}
-    with tinkoff_client as client:
-        prices = client.market_data.get_last_prices(
+    async with AsyncClient(config('TINKOFF_TOKEN')) as client:
+        prices_list = await client.market_data.get_last_prices(
             instrument_id=[*shares.keys()]
-        ).last_prices
+        )
+        prices = prices_list.last_prices
         for i in range(len(shares)):
             uid = prices[i].instrument_uid
             price_unit = prices[i].price.units
@@ -55,15 +53,5 @@ async def check_prices():
     for uid in [*shares.keys()]:
         price_change = current_prices[uid] / shares[uid]['starting_price']
         if not 0.95 < price_change < 1.05:
-            text = await generate_price_changing_text(shares[uid]['name'])
-            await bot.send_message(chat_id=config('TG_ID'), text=text)
-
-
-async def test_check():
-    current_prices = await get_shares_prices()
-    print(current_prices)
-    for uid in [*shares.keys()]:
-        price_change = current_prices[uid] / shares[uid]['starting_price']
-        if price_change != 1:
             text = await generate_price_changing_text(shares[uid]['name'])
             await bot.send_message(chat_id=config('TG_ID'), text=text)
