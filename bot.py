@@ -33,7 +33,11 @@ async def main():
 
 async def add_jobs(job_scheduler):
     job_scheduler.add_job(main)
-    job_scheduler.add_job(stock_market.check_prices, 'interval', minutes=10)
+    job_scheduler.add_job(
+        stock_market.update_prices,
+        'cron', day_of_week='mon-fri', hour=10
+    )
+    job_scheduler.add_job(stock_market.check_prices, 'interval', minutes=30)
     job_scheduler.start()
 
 if __name__ == '__main__':

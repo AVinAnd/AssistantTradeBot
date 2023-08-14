@@ -25,10 +25,7 @@ async def get_shares(logger):
             if active.instruments:
                 shares[uid] = {'name': active.instruments[0].name}
 
-        current_prices = await get_shares_prices()
-        for uid in current_prices.keys():
-            shares[uid]['starting_price'] = current_prices[uid]
-
+        await update_prices()
         logger.info(shares)
 
 
@@ -52,6 +49,12 @@ async def check_prices():
     current_prices = await get_shares_prices()
     for uid in [*shares.keys()]:
         price_change = current_prices[uid] / shares[uid]['starting_price']
-        if not 0.95 < price_change < 1.05:
+        if not 0.98 < price_change < 1.02:
             text = await generate_price_changing_text(shares[uid]['name'])
             await bot.send_message(chat_id=config('TG_ID'), text=text)
+
+
+async def update_prices():
+    current_prices = await get_shares_prices()
+    for uid in current_prices.keys():
+        shares[uid]['starting_price'] = current_prices[uid]

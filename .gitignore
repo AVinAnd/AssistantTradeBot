@@ -130,3 +130,7 @@ dmypy.json
 
 # .idea
 .idea
+
+# help-files
+main-requirements.txt
+testfile.py
